@@ -9,35 +9,41 @@ import css from './App.module.css';
 
 const API_KEY = '36589394-2143494a5fc7170f91521e5d8';
 
+const fetchImages = async (
+  searchQuery,
+  page,
+  setImages,
+  setPage,
+  setIsLoading
+) => {
+  setIsLoading(true);
+
+  try {
+    const response = await axios.get(
+      `https://pixabay.com/api/?q=${searchQuery}&page=${page}&key=${API_KEY}&image_type=photo&orientation=horizontal&per_page=12`
+    );
+
+    const newImages = response.data.hits.map(image => ({
+      id: image.id,
+      webformatURL: image.webformatURL,
+      largeImageURL: image.largeImageURL,
+    }));
+
+    setImages(prevImages => [...prevImages, ...newImages]);
+    setPage(prevPage => prevPage + 1);
+  } catch (error) {
+    console.log('Error:', error);
+  }
+
+  setIsLoading(false);
+};
+
 export const App = () => {
   const [images, setImages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
-
-  const fetchImages = async () => {
-    setIsLoading(true);
-
-    try {
-      const response = await axios.get(
-        `https://pixabay.com/api/?q=${searchQuery}&page=${page}&key=${API_KEY}&image_type=photo&orientation=horizontal&per_page=12`
-      );
-
-      const newImages = response.data.hits.map(image => ({
-        id: image.id,
-        webformatURL: image.webformatURL,
-        largeImageURL: image.largeImageURL,
-      }));
-
-      setImages(prevImages => [...prevImages, ...newImages]);
-      setPage(prevPage => prevPage + 1);
-    } catch (error) {
-      console.log('Error:', error);
-    }
-
-    setIsLoading(false);
-  };
 
   const handleSearchSubmit = query => {
     setImages([]);
@@ -46,7 +52,7 @@ export const App = () => {
   };
 
   const handleLoadMore = () => {
-    fetchImages();
+    fetchImages(searchQuery, page, setImages, setPage, setIsLoading);
   };
 
   const handleImageClick = imageUrl => {
@@ -62,8 +68,8 @@ export const App = () => {
       return;
     }
 
-    fetchImages();
-  }, [searchQuery]);
+    fetchImages(searchQuery, page, setImages, setPage, setIsLoading);
+  }, [searchQuery, page]);
 
   return (
     <div className={css.App}>
@@ -83,5 +89,3 @@ export const App = () => {
     </div>
   );
 };
-
-// adasd
