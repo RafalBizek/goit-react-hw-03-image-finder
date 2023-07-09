@@ -8,19 +8,22 @@ import Modal from 'components/modal/Modal';
 import css from './App.module.css';
 
 const API_KEY = '36589394-2143494a5fc7170f91521e5d8';
+const PER_PAGE = 12;
 
 const fetchImages = async (
   searchQuery,
   page,
+  perPage,
   setImages,
-  setPage,
+  setTotalImagesCount,
+  setDisplayedImagesCount,
   setIsLoading
 ) => {
   setIsLoading(true);
 
   try {
     const response = await axios.get(
-      `https://pixabay.com/api/?q=${searchQuery}&page=${page}&key=${API_KEY}&image_type=photo&orientation=horizontal&per_page=12`
+      `https://pixabay.com/api/?q=${searchQuery}&key=${API_KEY}&image_type=photo&orientation=horizontal&per_page=${perPage}&page=${page}&min_width=640&min_height=480`
     );
 
     const newImages = response.data.hits.map(image => ({
@@ -30,7 +33,8 @@ const fetchImages = async (
     }));
 
     setImages(prevImages => [...prevImages, ...newImages]);
-    setPage(prevPage => prevPage + 1);
+    setTotalImagesCount(response.data.totalHits);
+    setDisplayedImagesCount(prevCount => prevCount + newImages.length);
   } catch (error) {
     console.log('Error:', error);
   }
@@ -44,15 +48,28 @@ export const App = () => {
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
+  const [totalImagesCount, setTotalImagesCount] = useState(0);
+  const [displayedImagesCount, setDisplayedImagesCount] = useState(0);
 
   const handleSearchSubmit = query => {
     setImages([]);
     setSearchQuery(query);
     setPage(1);
+    setTotalImagesCount(0);
+    setDisplayedImagesCount(0);
   };
 
   const handleLoadMore = () => {
-    fetchImages(searchQuery, page, setImages, setPage, setIsLoading);
+    fetchImages(
+      searchQuery,
+      page + 1,
+      PER_PAGE,
+      setImages,
+      setTotalImagesCount,
+      setDisplayedImagesCount,
+      setIsLoading
+    );
+    setPage(prevPage => prevPage + 1);
   };
 
   const handleImageClick = imageUrl => {
@@ -68,7 +85,15 @@ export const App = () => {
       return;
     }
 
-    fetchImages(searchQuery, page, setImages, setPage, setIsLoading);
+    fetchImages(
+      searchQuery,
+      page,
+      PER_PAGE,
+      setImages,
+      setTotalImagesCount,
+      setDisplayedImagesCount,
+      setIsLoading
+    );
   }, [searchQuery, page]);
 
   return (
@@ -79,7 +104,9 @@ export const App = () => {
 
       {isLoading && <Loader />}
 
-      {images.length > 0 && !isLoading && <Button onClick={handleLoadMore} />}
+      {displayedImagesCount < totalImagesCount && !isLoading && (
+        <Button onClick={handleLoadMore} />
+      )}
 
       <Modal
         isOpen={selectedImage !== null}
